@@ -216,21 +216,21 @@ export const DpiaSchema = z.object({
   status: Status.default("draft"),
   createdAt: z.string(),
   updatedAt: z.string(),
-  people: PeopleSchema,
+  people: PeopleSchema.default({}),
   versions: z.array(VersionEntry).default([]),
 
   // A — Description
   overviewOfProcessing: z.string().default(""),
-  reasons: ReasonsSchema,
+  reasons: ReasonsSchema.default({}),
   dataSubjects: z.string().default(""),
-  dataCollection: DataCollectionSchema,
+  dataCollection: DataCollectionSchema.default({}),
   dataFlowRows: z.array(DataFlowRow).default([]),
   involvedParties: z.array(InvolvedParty).default([]),
-  pbd: PbdStrategies,
+  pbd: PbdStrategies.default({}),
 
   // B — Security
   techRows: z.array(TechRow).default([]),
-  securityAssessment: SecurityAssessment,
+  securityAssessment: SecurityAssessment.default({}),
 
   // C — Legal
   legalBasisRows: z.array(LegalBasisRow).default([]),
@@ -238,14 +238,14 @@ export const DpiaSchema = z.object({
   rights: z.array(RightRow).default([]),
 
   // D — Necessity
-  necessity: NecessitySchema,
+  necessity: NecessitySchema.default({}),
 
   // E — Risk
   riskRows: z.array(RiskRow).default([]),
 
   // Conclusion & Consultation
   conclusion: z.string().default(""),
-  consultation: ConsultationSchema,
+  consultation: ConsultationSchema.default({}),
 });
 export type Dpia = z.infer<typeof DpiaSchema>;
 
