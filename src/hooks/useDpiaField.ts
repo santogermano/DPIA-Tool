@@ -1,4 +1,4 @@
-import { useSyncExternalStore, useCallback } from "react";
+import { useSyncExternalStore, useCallback, useRef } from "react";
 import * as Y from "yjs";
 
 /** Root Y.Map for a DPIA lives under key "dpia". Leaf values stored as plain JSON. */
@@ -22,7 +22,15 @@ function resolve(root: Y.Map<any>, path: string[], create = false): { parent: an
   return { parent: cur, key: path[path.length - 1] };
 }
 
+// Stable empty array returned when a path has no data, preventing useSyncExternalStore
+// from seeing a new reference on every call and triggering an infinite re-render loop.
+const EMPTY_ARR: any[] = [];
+
 export function useField<T>(ydoc: Y.Doc | undefined, path: string, defaultValue: T): [T, (v: T) => void] {
+  // useRef captures defaultValue once on mount, giving getSnapshot a stable fallback
+  // reference even when callers pass object literals like `{} as People`.
+  const stableDefault = useRef<T>(defaultValue);
+
   const subscribe = useCallback((cb: () => void) => {
     if (!ydoc) return () => {};
     const root = getRoot(ydoc);
@@ -32,13 +40,13 @@ export function useField<T>(ydoc: Y.Doc | undefined, path: string, defaultValue:
   }, [ydoc]);
 
   const getSnapshot = useCallback((): T => {
-    if (!ydoc) return defaultValue;
+    if (!ydoc) return stableDefault.current;
     const segs = path.split(".");
     const res = resolve(getRoot(ydoc), segs, false);
-    if (!res) return defaultValue;
+    if (!res) return stableDefault.current;
     const v = res.parent.get ? res.parent.get(res.key) : res.parent[res.key];
-    return (v === undefined ? defaultValue : v) as T;
-  }, [ydoc, path, defaultValue]);
+    return (v === undefined ? stableDefault.current : v) as T;
+  }, [ydoc, path]);
 
   const value = useSyncExternalStore(subscribe, getSnapshot, getSnapshot);
 
@@ -69,12 +77,12 @@ export function useArray<T extends { id: string }>(ydoc: Y.Doc | undefined, path
   }, [ydoc]);
 
   const getSnapshot = useCallback((): T[] => {
-    if (!ydoc) return [];
+    if (!ydoc) return EMPTY_ARR;
     const segs = path.split(".");
     const res = resolve(getRoot(ydoc), segs, false);
-    if (!res) return [];
+    if (!res) return EMPTY_ARR;
     const arr = res.parent.get ? res.parent.get(res.key) : res.parent[res.key];
-    if (!arr) return [];
+    if (!arr) return EMPTY_ARR;
     return (arr as any[]) as T[];
   }, [ydoc, path]);
 
